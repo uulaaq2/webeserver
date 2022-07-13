@@ -1,4 +1,5 @@
 import mysql from 'mysql'
+import { _getDebugLine } from '../appFunctions/helpers'
 import { setSuccessReply, setErrorReply } from '../appFunctions/replies'
 
 class DB {
@@ -17,6 +18,7 @@ class DB {
                               })     
         DB.connection.connect((error) => {
                                 if (error) setErrorReply({
+                                  debugLine: _getDebugLine(),
                                   obj: error
                                 })
                                 console.log('Connected to the db ...')
@@ -37,11 +39,13 @@ class DB {
 
           if (error) {
             resolve(setErrorReply({
+              debugLine: _getDebugLine(),
               obj: error
             }))
           }
 
           resolve(setSuccessReply({
+            debugLine: _getDebugLine(),
             data: results
           }))
 

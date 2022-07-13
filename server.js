@@ -7,12 +7,11 @@ import cors from 'cors'
 const app = express();
 const port = process.env.APP_PORT || 3003
 
-import routerSignIn from './routes/signin/index';
-
 app.use(express.static('public'))
 app.use(express.json());
 app.use(cors())
 
+import routerSignIn from './routes/signin'
 app.use('/signin', routerSignIn)
 
 async function main(){

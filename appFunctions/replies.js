@@ -1,10 +1,11 @@
-import { _getCallerFile } from "./helpers"
+import config from '../config'
 
 export function setSuccessReply(params = {}) {
-  const { status = 'ok', message = '', ...rest } = params
+  const { status = 'ok', message = '', debugLine = '', ...rest } = params
   let reply ={
     status,
     message,
+    debugLine,
     ...rest
   }
 
@@ -12,10 +13,11 @@ export function setSuccessReply(params = {}) {
 }
 
 export function setCustomReply(params = {}) {
-  const { status, message = '', ...rest } = params
+  const { status, message = '', debugLine = '', ...rest } = params
   let reply = {
     status,
     message,
+    debugLine,
     ...rest
   }
 
@@ -23,10 +25,11 @@ export function setCustomReply(params = {}) {
 }
 
 export function setErrorReply(params = {}) {
-  const { status = 'error', message = '', ...rest } = params
+  const { status = 'error', message = '', debugLine = '', ...rest } = params
   let reply = {
     status,    
     message,
+    debugLine,
      ...rest
   }
  
