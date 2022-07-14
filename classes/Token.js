@@ -14,7 +14,7 @@ class Token {
       let jwtOptions = {}
       
       if (!expiresIn) {
-        jwtOptions.expiresIn = config.app.tokenExpiresIn
+        jwtOptions.expiresIn = config.tokenExpiresIn
       }
 
       const token = jwt.sign(payload, process.env.JWT_SECRET, jwtOptions)
