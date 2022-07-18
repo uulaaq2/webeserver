@@ -36,7 +36,7 @@ class User {
         })
       }
 
-      if (getByEmailAddressResult.data[1].length === 0) {
+      if (getByEmailAddressResult.data[getByEmailAddressResult.data.length - 1].length === 0) {
         return setCustomReply({
           status: 'emailAddressCannotBeFound',
           message: 'Email address can not be found',
@@ -45,9 +45,8 @@ class User {
           obj: getByEmailAddressResult.obj || null
         })
       }
-
       return setSuccessReply({
-        user: result.data[1][0],
+        user: getByEmailAddressResult.data[getByEmailAddressResult.data.length - 1][0],
         debugLine: _getDebugLine()
       })
 
@@ -73,13 +72,12 @@ class User {
           message: getByEmailAddressResult.message,
           debugLine: _getDebugLine(),
           returnedDebugLine: getByEmailAddressResult.debugLine,
-          obj: getByEmailAddressResult.obj || null
+          obj: getByEmailAddressResult.obj
         })
       }
-
       const decrytpPasswordResult = new Password().compare({
         password,
-        encryptedPassword: getByEmailAddressResult.Password
+        encryptedPassword: getByEmailAddressResult.user.Password
       })
       
       if (decrytpPasswordResult.status !== 'ok') {
@@ -88,7 +86,7 @@ class User {
           message: decrytpPasswordResult.message,
           debugLine: _getDebugLine(),
           returnedDebugLine: decrytpPasswordResult.debugLine,
-          obj: decrytpPasswordResult.obj || null
+          obj: decrytpPasswordResult.obj
         })
       }
 
@@ -106,12 +104,30 @@ class User {
   }
   // checkPassword
 
-  // signInWithCredentials
-  async signInWithCredentials(params) {
+  // signIn
+  async signIn(params) {
     try {
-      const { emailAddress, password } = params
+      const { emailAddress, password, token } = params
 
+      if (!emailAddress || !password) {        
+        const verifyTokenResult = new Token().verify({ token })
+
+        if (verifyTokenResult.status !== 'ok') {
+          return setCustomReply({
+            status: verifyTokenResult.status,
+            message: verifyTokenResult.message,
+            debugLine: _getDebugLine(),
+            returnedDebugLine: verifyTokenResult.debugLine,
+            obj: verifyTokenResult.obj
+          })
+        }
+
+        emailAddress = verifyTokenResult.user.Email_Address
+        password = verifyTokenResult.user.password
+      }
+      
       const checkCredentialsResult = await this.checkCredentials({ emailAddress, password })
+      console.log(checkCredentialsResult)
 
       if (checkCredentialsResult.status !== 'ok') {
         return setCustomReply({
@@ -141,6 +157,15 @@ class User {
       }
 
       return setSuccessReply({
+        links: {
+          userLinks: ''
+        },
+        menus: {
+          userMenus: ''
+        },
+        settings: {
+          userSettings: ''
+        },
         user: checkCredentialsResult.user,
         token: generateTokenResult.token,  
         debugLine: _getDebugLine()
@@ -153,54 +178,9 @@ class User {
       })
     }
   }
-  // signInWithCredentials
+  // signIn
 
-  // signInWithToken
-  async signInWithToken(params)  {
-    try {
-      const { token } = params
-
-      const verifyTokenResult = new Tokan().verify({ token })
-
-      if (verifyTokenResult.status !== 'ok') {
-        return setCustomReply({
-          status: verifyTokenResult.status,
-          message: verifyTokenResult.message,
-          debugLine: _getDebugLine(),
-          returnedDebugLine: verifyTokenResult.debugLine,
-          obj: verifyTokenResult.obj || null
-        })
-      }
-
-      const signInWithCredentialsResult = await this.signInWithCredentials({
-        emailAddress: verifyTokenResult.user.Email_Address,
-        password: verifyTokenResult.user.Password
-      })
-
-      if (signInWithCredentialsResult.status !== 'ok') {
-        return setCustomReply({
-          status: signInWithCredentialsResult.status,
-          message: signInWithCredentialsResult.message,
-          debugLine: _getDebugLine(),
-          returnedDebugLine: signInWithCredentialsResult.debugLine,
-          obj: signInWithCredentialsResult.obj || null
-        })
-      }
-
-      return setSuccessReply({
-        user: signInWithCredentialsResult.user,
-        token: signInWithCredentialsResult.token,
-        debugLine: _getDebugLine()
-      })
-
-    } catch (error) {
-      return setErrorReply({
-        debugLine: _getDebugLine(),
-        obj: error
-      })
-    }
-  }
-
+  
 }
 
 export default User

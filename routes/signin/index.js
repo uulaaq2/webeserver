@@ -7,11 +7,8 @@ import User from '../../classes/User'
 router.post('/', cors(), function(req, res) {
 
   async function main() {
-    const result = await new User().getUserByEmailAddress({
-      emailAddress: 'muhittin.yendun@au.indorama.net'
-    })
-
-    console.log(result)
+    const result = await new User().signIn({ ...req.body })
+    res.send(result)
   }
 
   main()

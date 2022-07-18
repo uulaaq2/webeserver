@@ -7,7 +7,8 @@ import { _getDebugLine } from '../appFunctions/helpers'
 class Token {
   
   // generate
-  generate() {
+  generate(params) {
+    console.log(config)
     try {      
       const { payload, expiresIn = null } = params
       
@@ -16,6 +17,8 @@ class Token {
       if (!expiresIn) {
         jwtOptions.expiresIn = config.tokenExpiresIn
       }
+
+      console.log(jwtOptions)
 
       const token = jwt.sign(payload, process.env.JWT_SECRET, jwtOptions)
 
