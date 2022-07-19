@@ -19,7 +19,7 @@ class DB {
         DB.connection.connect((error) => {
                                 if (error) setErrorReply({
                                   debugLine: _getDebugLine(),
-                                  obj: error
+                                  errorObj: error
                                 })
                                 console.log('Connected to the db ...')
                             })
@@ -40,7 +40,7 @@ class DB {
           if (error) {
             resolve(setErrorReply({
               debugLine: _getDebugLine(),
-              obj: error
+              errorObj: error
             }))
           }
 

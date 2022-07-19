@@ -8,7 +8,6 @@ class Token {
   
   // generate
   generate(params) {
-    console.log(config)
     try {      
       const { payload, expiresIn = null } = params
       
@@ -17,8 +16,6 @@ class Token {
       if (!expiresIn) {
         jwtOptions.expiresIn = config.tokenExpiresIn
       }
-
-      console.log(jwtOptions)
 
       const token = jwt.sign(payload, process.env.JWT_SECRET, jwtOptions)
 
@@ -30,7 +27,7 @@ class Token {
     } catch (error) {
       return setErrorReply({
         debugLine: _getDebugLine(),
-        obj: error
+        errorObj: error
       })
     }
   }
@@ -51,8 +48,7 @@ class Token {
           status: diffToDate.status,
           message: diffToDate.message,
           debugLine: _getDebugLine(),
-          returnedDebugLine: diffToDate.debugLine,
-          obj: diffToDate.obj || null
+          returnedDebug: diffToDate.debug
         })
       }      
 
@@ -82,7 +78,7 @@ class Token {
     } catch (error) {
       return setErrorReply({
         debugLine: _getDebugLine(),
-        obj: error
+        errorObj: error
       })
     }
 

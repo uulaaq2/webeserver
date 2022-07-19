@@ -1,7 +1,9 @@
 import DB from './DB'
 import Password from './Password'
 import Token from './Token'
+import Permissions from './Permissions'
 import sqlstring from 'sqlstring'
+import _ from 'lodash'
 import { setSuccessReply, setCustomReply, setErrorReply } from '../appFunctions/replies'
 import { _getCallerFile, _getDebugLine } from '../appFunctions/helpers'
 
@@ -31,8 +33,7 @@ class User {
           status: getByEmailAddressResult.status,
           message: getByEmailAddressResult.message,          
           debugLine: _getDebugLine(),       
-          returnedDebugLine: getByEmailAddressResult.debugLine,   
-          obj: getByEmailAddressResult.obj || null
+          returnedDebug: getByEmailAddressResult.debug
         })
       }
 
@@ -41,8 +42,7 @@ class User {
           status: 'emailAddressCannotBeFound',
           message: 'Email address can not be found',
           debugLine: _getDebugLine(),
-          returnedDebugLine: getByEmailAddressResult.debugLine,
-          obj: getByEmailAddressResult.obj || null
+          returnedDebug: getByEmailAddressResult.debug
         })
       }
       return setSuccessReply({
@@ -53,13 +53,13 @@ class User {
     } catch (error) {
       return setErrorReply({
         debugLine: _getDebugLine(),
-        obj: error
+        errorObj: error
       })
     }
   }
   //getByEmailAddress
 
-  // checkPassword
+  // checkCredentials
   async checkCredentials(params) {
     try {
       const { emailAddress, password } = params     
@@ -71,8 +71,7 @@ class User {
           status: getByEmailAddressResult.status,
           message: getByEmailAddressResult.message,
           debugLine: _getDebugLine(),
-          returnedDebugLine: getByEmailAddressResult.debugLine,
-          obj: getByEmailAddressResult.obj
+          returnedDebug: getByEmailAddressResult.debug
         })
       }
       const decrytpPasswordResult = new Password().compare({
@@ -85,8 +84,7 @@ class User {
           status: decrytpPasswordResult.status,
           message: decrytpPasswordResult.message,
           debugLine: _getDebugLine(),
-          returnedDebugLine: decrytpPasswordResult.debugLine,
-          obj: decrytpPasswordResult.obj
+          returnedDebug: decrytpPasswordResult.debug
         })
       }
 
@@ -98,17 +96,17 @@ class User {
     } catch (error) {
       return setErrorReply({
         debugLine: _getDebugLine(),
-        obj: error
+        errorObj: error
       })
     }
   }
-  // checkPassword
+  // checkCredentials
 
   // signIn
   async signIn(params) {
     try {
-      const { emailAddress, password, token } = params
-
+      const { emailAddress, password, token, site } = params
+      
       if (!emailAddress || !password) {        
         const verifyTokenResult = new Token().verify({ token })
 
@@ -117,8 +115,7 @@ class User {
             status: verifyTokenResult.status,
             message: verifyTokenResult.message,
             debugLine: _getDebugLine(),
-            returnedDebugLine: verifyTokenResult.debugLine,
-            obj: verifyTokenResult.obj
+            returnedDebug: verifyTokenResult.debug
           })
         }
 
@@ -127,15 +124,13 @@ class User {
       }
       
       const checkCredentialsResult = await this.checkCredentials({ emailAddress, password })
-      console.log(checkCredentialsResult)
 
       if (checkCredentialsResult.status !== 'ok') {
         return setCustomReply({
           status: checkCredentialsResult.status,
           message: checkCredentialsResult.message,
           debugLine: _getDebugLine(),
-          returnedDebugLine: checkCredentialsResult.debugLine,
-          obj: checkCredentialsResult.obj || null
+          returnedDebug: checkCredentialsResult.debug
         })
       }
 
@@ -151,22 +146,70 @@ class User {
           status: generateTokenResult.status,
           message: generateTokenResult.message,
           debugLine: _getDebugLine(),
-          returnedDebugLine: generateTokenResult.debugLine,
-          obj: generateTokenResult.obj || null
+          returnedDebug: generateTokenResult.debug
         })
       }
 
+      // get user selected site
+      const siteList = checkCredentialsResult.user.Sites.split(',')
+      console.log(siteList)
+      let userSelectedSite
+      if (site) {        
+        let found = false;
+        for (let i = 0; i < siteList.length && !found; i++) {
+          if (siteList[i] === site) {
+            found = true;
+            break;
+          }
+        }
+        if (found) {
+          userSelectedSite = site
+        } else {
+          userSelectedSite = siteList[0]
+        }
+      } else {
+        userSelectedSite = siteList[0]
+      }
+      // get user selected site
+
+      // get all user permissions
+      const userDepartmentIDsCommaListResult = await new Permissions().getUserDepartments({
+        userID: checkCredentialsResult.user.ID
+      })      
+
+      const allUserPermissionsResult = await new Permissions().getAllUserPermissions({
+        userID: checkCredentialsResult.user.ID,
+        departmentIDsCommaList: userDepartmentIDsCommaListResult.departmentIDsCommaList,
+        site: userSelectedSite
+      })
+      // get all user permissions
+
+      // prepare all user permissions
+      let menus = {}
+      var menusTemp
+      let rawPermissions = allUserPermissionsResult.allUserPermissions
+      var i = 0
+      let pieces
+      rawPermissions.forEach(e => {                  
+          pieces = rawPermissions[i].Path.split('.')
+          menusTemp = pieces.reduceRight((obj, next) => ({[next]: obj}), {[rawPermissions[i].Action]: true})
+          _.merge(menus, menusTemp)                
+          i++
+      })                   
+      // prepare all user permissions
+
+      console.log(
+        {
+          menus,
+          user: checkCredentialsResult.user,                        
+          token: generateTokenResult.token,  
+          debugLine: _getDebugLine()
+      })
+
       return setSuccessReply({
-        links: {
-          userLinks: ''
-        },
-        menus: {
-          userMenus: ''
-        },
-        settings: {
-          userSettings: ''
-        },
-        user: checkCredentialsResult.user,
+        menus,
+        selectedSite: userSelectedSite,
+        user: checkCredentialsResult.user,                        
         token: generateTokenResult.token,  
         debugLine: _getDebugLine()
       })
@@ -174,7 +217,7 @@ class User {
     } catch (error) {
       return setErrorReply({
         debugLine: _getDebugLine(),
-        obj: error
+        errorObj: error
       })
     }
   }

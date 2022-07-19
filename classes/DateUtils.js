@@ -17,7 +17,7 @@ class DateUtils {
     } catch (error) {
         return setErrorReply({
           debugLine: _getDebugLine(),
-          obj: error
+          errorObj: error
         })
     }
   }

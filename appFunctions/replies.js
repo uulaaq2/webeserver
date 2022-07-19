@@ -5,7 +5,9 @@ export function setSuccessReply(params = {}) {
   let reply ={
     status,
     message,
-    debugLine,
+    debug: {
+      debugLine
+    },
     ...rest
   }
 
@@ -13,25 +15,37 @@ export function setSuccessReply(params = {}) {
 }
 
 export function setCustomReply(params = {}) {
-  const { status, message = '', debugLine = '', ...rest } = params
+  const { status, message = '', debugLine = '', errorObj = {}, ...rest } = params
   let reply = {
     status,
-    message,
-    debugLine,
+    message: message || errorObj.message,
+    debug: {
+      debugLine
+    },
     ...rest
   }
+
+  Object.getOwnPropertyNames(errorObj).forEach(function(name) {
+    reply.debug[name] = errorObj[name]
+  })
 
   return reply
 }
 
 export function setErrorReply(params = {}) {
-  const { status = 'error', message = '', debugLine = '', ...rest } = params
+  const { status = 'error', message = '', debugLine = '', errorObj = {}, ...rest } = params
   let reply = {
     status,    
-    message,
-    debugLine,
-     ...rest
+    message: message || errorObj.message,
+    debug: {
+      debugLine
+    },
+    ...rest
   }
  
+  Object.getOwnPropertyNames(errorObj).forEach(function(name) {
+    reply.debug[name] = errorObj[name]
+  })
+  
   return reply
 }
