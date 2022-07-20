@@ -14,8 +14,10 @@ class User {
     const { emailAddress } = params
 
     if (!emailAddress) {
-      return setCustomReply('noEmailAddressIsProvided',{
-        message: 'No email address is provided'
+      return setCustomReply({
+        status: 'noEmailAddressIsProvided',
+        message: 'No email address is provided',
+        debugLine: _getDebugLine()
       })
     }
 
@@ -39,8 +41,8 @@ class User {
 
       if (getByEmailAddressResult.data[getByEmailAddressResult.data.length - 1].length === 0) {
         return setCustomReply({
-          status: 'emailAddressCannotBeFound',
-          message: 'Email address can not be found',
+          status: 'invalidEmailAddress',
+          message: 'Invalid email address',
           debugLine: _getDebugLine(),
           returnedDebug: getByEmailAddressResult.debug
         })
@@ -62,11 +64,28 @@ class User {
   // checkCredentials
   async checkCredentials(params) {
     try {
-      const { emailAddress, password } = params     
+      let { emailAddress, password, token } = params
+      let signInType = (emailAddress && password) ? 'credentials' : 'token'
+
+      if (signInType === 'token') {
+        if (token) {
+          const verifyTokenResult = new Token().verify({ token })
+          if (verifyTokenResult.status !== 'ok') {
+            return setCustomReply({
+              status: verifyTokenResult.status,
+              message: verifyTokenResult.message,
+              debugLine: _getDebugLine(),
+              returnedDebug: verifyTokenResult.debug
+            })
+          }
+
+          emailAddress = verifyTokenResult.user.Email_Address
+        }
+      }
 
       const getByEmailAddressResult = await this.getByEmailAddress({emailAddress})
       
-      if (getByEmailAddressResult.status !== 'ok') {
+      if (getByEmailAddressResult.status !== 'ok' && getByEmailAddressResult.status !== 'invalidEmailAddress') {
         return setCustomReply({
           status: getByEmailAddressResult.status,
           message: getByEmailAddressResult.message,
@@ -74,19 +93,39 @@ class User {
           returnedDebug: getByEmailAddressResult.debug
         })
       }
-      const decrytpPasswordResult = new Password().compare({
-        password,
-        encryptedPassword: getByEmailAddressResult.user.Password
-      })
-      
-      if (decrytpPasswordResult.status !== 'ok') {
+
+      if (getByEmailAddressResult.status === 'invalidEmailAddress') {
         return setCustomReply({
-          status: decrytpPasswordResult.status,
-          message: decrytpPasswordResult.message,
-          debugLine: _getDebugLine(),
-          returnedDebug: decrytpPasswordResult.debug
+          status: 'invalidCredentials',
+          message: 'Invalid email address or password',
+          debugLine: _getDebugLine()
         })
       }
+
+      if (signInType === 'credentials') {
+        const decrytpPasswordResult = new Password().compare({
+          password,
+          encryptedPassword: getByEmailAddressResult.user.Password
+        })
+        
+        if (decrytpPasswordResult.status !== 'ok' && decrytpPasswordResult.status !== 'invalidPassword') {
+          return setCustomReply({
+            status: decrytpPasswordResult.status,
+            message: decrytpPasswordResult.message,
+            debugLine: _getDebugLine(),
+            returnedDebug: decrytpPasswordResult.debug
+          })
+        }
+        
+        if (decrytpPasswordResult.status === 'invalidPassword') {
+          return setCustomReply({
+            status: 'invalidCredentials',
+            message: 'Invalid email address or password',
+            debugLine: _getDebugLine()
+          })
+        }
+      }
+
 
       return setSuccessReply({
         user: getByEmailAddressResult.user,
@@ -106,24 +145,8 @@ class User {
   async signIn(params) {
     try {
       const { emailAddress, password, token, site } = params
-      
-      if (!emailAddress || !password) {        
-        const verifyTokenResult = new Token().verify({ token })
 
-        if (verifyTokenResult.status !== 'ok') {
-          return setCustomReply({
-            status: verifyTokenResult.status,
-            message: verifyTokenResult.message,
-            debugLine: _getDebugLine(),
-            returnedDebug: verifyTokenResult.debug
-          })
-        }
-
-        emailAddress = verifyTokenResult.user.Email_Address
-        password = verifyTokenResult.user.password
-      }
-      
-      const checkCredentialsResult = await this.checkCredentials({ emailAddress, password })
+      const checkCredentialsResult = await this.checkCredentials({ emailAddress, password, token })
 
       if (checkCredentialsResult.status !== 'ok') {
         return setCustomReply({
@@ -152,7 +175,6 @@ class User {
 
       // get user selected site
       const siteList = checkCredentialsResult.user.Sites.split(',')
-      console.log(siteList)
       let userSelectedSite
       if (site) {        
         let found = false;
@@ -197,14 +219,6 @@ class User {
           i++
       })                   
       // prepare all user permissions
-
-      console.log(
-        {
-          menus,
-          user: checkCredentialsResult.user,                        
-          token: generateTokenResult.token,  
-          debugLine: _getDebugLine()
-      })
 
       return setSuccessReply({
         menus,

@@ -7,9 +7,10 @@ import User from '../../classes/User'
 router.post('/', cors(), function(req, res) {
 
   async function main() {
-    console.log('sign in params ', req.body)
     const result = await new User().signIn({ ...req.body })
+    console.log(result)
     res.send(result)
+
   }
 
   main()

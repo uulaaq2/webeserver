@@ -61,7 +61,7 @@ class Token {
       }
 
       if (!ignoreShouldChangePassword) {
-        if (result.shouldChangePassword) {
+        if (verifyTokenResult.shouldChangePassword) {
           return setCustomReply({
             status: 'shouldChangePassword',
             message: 'Please change your password',
@@ -76,7 +76,9 @@ class Token {
         user: verifyTokenResult
       })
     } catch (error) {
-      return setErrorReply({
+      return setCustomReply({
+        status: 'invalidToken',
+        message: 'Invalid token',
         debugLine: _getDebugLine(),
         errorObj: error
       })
