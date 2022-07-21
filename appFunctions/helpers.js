@@ -29,3 +29,4 @@ export function _getDebugLine(message) {
   let functionName = frame.split(" ")[5];
   return functionName + ":" + lineNumber + " " + message;
 }
+

@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs'
-import { setSuccessReply, setErrorReply, setCustomReply } from "../appFunctions/replies"
-import { _getDebugLine } from '../appFunctions/helpers'
+import { setSuccessReply } from "../appFunctions/replies"
+import CustomError from './CustomError'
 
 class Password {
 
@@ -12,15 +12,11 @@ class Password {
       const encryptedPassword = bcrypt.hashSync(password, salt)
 
       return setSuccessReply({
-        encryptedPassword,
-        debugLine: _getDebugLine()
+        data: encryptedPassword
       })
 
     } catch (error) {
-      return setErrorReply({
-        debugLine: _getDebugLine(),
-        errorObj: error
-      })
+      throw new CustomError()
     }
   }
   // encrypt
@@ -32,21 +28,14 @@ class Password {
 
       if (bcrypt.compareSync(password, encryptedPassword)) {
         return setSuccessReply({
-          debugLine: _getDebugLine()
+          data: password
         })
       } else {
-        return setCustomReply({
-          status: 'invalidPassword',
-          message: 'Invalid password',
-          debugLine: _getDebugLine()
-        })
+        throw new CustomError('Invalid password', 'invalidPassword')
       }
 
     } catch (error) {
-      return setErrorReply({
-        debugLine: _getDebugLine(),
-        errorObj: error
-      })
+      throw new CustomError(error.message, error.iType)
     }
   }
   // compare

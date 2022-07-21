@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken'
 import config from '../config'
 import DateUtils from './DateUtils'
-import { setSuccessReply, setCustomReply, setErrorReply } from './../appFunctions/replies'
-import { _getDebugLine } from '../appFunctions/helpers'
+import { setSuccessReply } from './../appFunctions/replies'
+import CustomError from './CustomError';
 
 class Token {
   
@@ -20,15 +20,11 @@ class Token {
       const token = jwt.sign(payload, process.env.JWT_SECRET, jwtOptions)
 
       return setSuccessReply({
-        token,
-        debugLine: _getDebugLine(),
+        data: token
       })
 
     } catch (error) {
-      return setErrorReply({
-        debugLine: _getDebugLine(),
-        errorObj: error
-      })
+      throw new CustomError(error.message, error.iType)
     }
   }
   // generate
@@ -43,45 +39,24 @@ class Token {
       const dateUtils = new DateUtils()
       const diffToDate = dateUtils.diffToDate(accountExpiresAt)
 
-      if (diffToDate.status !== 'ok') {
-        setCustomReply({
-          status: diffToDate.status,
-          message: diffToDate.message,
-          debugLine: _getDebugLine(),
-          returnedDebug: diffToDate.debug
-        })
-      }      
-
       if (diffToDate.days < 0) {
-        return setCustomReply({
-          status: 'accountIsExpired',
-          message: 'Your account is expired, please contact to your manager',
-          debugLine: _getDebugLine()
-        })
+        throw new CustomError('Your account is expired', 'accountIsExpired')
       }
 
       if (!ignoreShouldChangePassword) {
         if (verifyTokenResult.shouldChangePassword) {
-          return setCustomReply({
-            status: 'shouldChangePassword',
-            message: 'Please change your password',
-            debugLine: _getDebugLine(),
-            token
-          })
+          throw new Error('Please change your password', 'shouldChangePassword')
         }
       }
       
       return setSuccessReply({
-        token,
-        user: verifyTokenResult
+        data: {
+          token,
+          user: verifyTokenResult
+        }
       })
     } catch (error) {
-      return setCustomReply({
-        status: 'invalidToken',
-        message: 'Invalid token',
-        debugLine: _getDebugLine(),
-        errorObj: error
-      })
+      throw new CustomError('Token expired', 'tokenExpired')
     }
 
   }

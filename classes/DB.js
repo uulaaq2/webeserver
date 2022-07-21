@@ -1,6 +1,7 @@
 import mysql from 'mysql'
-import { _getDebugLine } from '../appFunctions/helpers'
-import { setSuccessReply, setErrorReply } from '../appFunctions/replies'
+import CustomError from './CustomError';
+import { setSuccessReply } from '../appFunctions/replies'
+import { result } from 'lodash';
 
 class DB {
 
@@ -17,10 +18,9 @@ class DB {
                                 multipleStatements: true
                               })     
         DB.connection.connect((error) => {
-                                if (error) setErrorReply({
-                                  debugLine: _getDebugLine(),
-                                  errorObj: error
-                                })
+                                if (error) {
+                                  throw new CustomError(error)
+                                }
                                 console.log('Connected to the db ...')
                             })
 
@@ -38,14 +38,14 @@ class DB {
       DB.connection.query(sqlStatement, values, (error, results) => {
 
           if (error) {
-            resolve(setErrorReply({
-              debugLine: _getDebugLine(),
-              errorObj: error
-            }))
+           throw new CustomError(error.message)
+          }
+
+          if (results[results.length -1].length === 0) {
+            throw new CustomError('Empty result','emptyResult')
           }
 
           resolve(setSuccessReply({
-            debugLine: _getDebugLine(),
             data: results
           }))
 

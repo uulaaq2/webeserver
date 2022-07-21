@@ -1,5 +1,5 @@
-import { setSuccessReply, setErrorReply } from '../appFunctions/replies'
-import { _getDebugLine } from '../appFunctions/helpers'
+import { setSuccessReply } from '../appFunctions/replies'
+import CustomError from './CustomError';
 
 class DateUtils {
   
@@ -11,14 +11,10 @@ class DateUtils {
       const days = Math.ceil(difference / (1000 * 3600 * 24));      
 
       return setSuccessReply({
-        days,
-        debugLine: _getDebugLine()
+        data: days
       })
     } catch (error) {
-        return setErrorReply({
-          debugLine: _getDebugLine(),
-          errorObj: error
-        })
+      throw new CustomError(error.message, error.iType)
     }
   }
   // diffToDate

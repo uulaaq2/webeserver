@@ -4,8 +4,8 @@ import Token from './Token'
 import Permissions from './Permissions'
 import sqlstring from 'sqlstring'
 import _ from 'lodash'
-import { setSuccessReply, setCustomReply, setErrorReply } from '../appFunctions/replies'
-import { _getCallerFile, _getDebugLine } from '../appFunctions/helpers'
+import { setSuccessReply } from '../appFunctions/replies'
+import CustomError from './CustomError'
 
 class User {
 
@@ -14,11 +14,7 @@ class User {
     const { emailAddress } = params
 
     if (!emailAddress) {
-      return setCustomReply({
-        status: 'noEmailAddressIsProvided',
-        message: 'No email address is provided',
-        debugLine: _getDebugLine()
-      })
+      throw new CustomError('Missing parameters - Email address', 'missingParameters')
     }
 
     try {
@@ -30,33 +26,15 @@ class User {
         sqlStatement
       })
 
-      if (getByEmailAddressResult.status !== 'ok') {
-        return setCustomReply({
-          status: getByEmailAddressResult.status,
-          message: getByEmailAddressResult.message,          
-          debugLine: _getDebugLine(),       
-          returnedDebug: getByEmailAddressResult.debug
-        })
-      }
-
       if (getByEmailAddressResult.data[getByEmailAddressResult.data.length - 1].length === 0) {
-        return setCustomReply({
-          status: 'invalidEmailAddress',
-          message: 'Invalid email address',
-          debugLine: _getDebugLine(),
-          returnedDebug: getByEmailAddressResult.debug
-        })
+        throw new CustomError('Invalid email address', 'invalidEmailAddress')
       }
       return setSuccessReply({
-        user: getByEmailAddressResult.data[getByEmailAddressResult.data.length - 1][0],
-        debugLine: _getDebugLine()
+        data: getByEmailAddressResult.data[getByEmailAddressResult.data.length - 1][0]
       })
 
     } catch (error) {
-      return setErrorReply({
-        debugLine: _getDebugLine(),
-        errorObj: error
-      })
+      throw new CustomError(error.message, error.iType)
     }
   }
   //getByEmailAddress
@@ -70,73 +48,31 @@ class User {
       if (signInType === 'token') {
         if (token) {
           const verifyTokenResult = new Token().verify({ token })
-          if (verifyTokenResult.status !== 'ok') {
-            return setCustomReply({
-              status: verifyTokenResult.status,
-              message: verifyTokenResult.message,
-              debugLine: _getDebugLine(),
-              returnedDebug: verifyTokenResult.debug
-            })
-          }
 
           emailAddress = verifyTokenResult.user.Email_Address
         }
       }
 
-      const getByEmailAddressResult = await this.getByEmailAddress({emailAddress})
-      
-      if (getByEmailAddressResult.status !== 'ok' && getByEmailAddressResult.status !== 'invalidEmailAddress') {
-        return setCustomReply({
-          status: getByEmailAddressResult.status,
-          message: getByEmailAddressResult.message,
-          debugLine: _getDebugLine(),
-          returnedDebug: getByEmailAddressResult.debug
-        })
-      }
-
-      if (getByEmailAddressResult.status === 'invalidEmailAddress') {
-        return setCustomReply({
-          status: 'invalidCredentials',
-          message: 'Invalid email address or password',
-          debugLine: _getDebugLine()
-        })
-      }
+      const getByEmailAddressResult = await this.getByEmailAddress({emailAddress})     
 
       if (signInType === 'credentials') {
         const decrytpPasswordResult = new Password().compare({
           password,
           encryptedPassword: getByEmailAddressResult.user.Password
-        })
-        
-        if (decrytpPasswordResult.status !== 'ok' && decrytpPasswordResult.status !== 'invalidPassword') {
-          return setCustomReply({
-            status: decrytpPasswordResult.status,
-            message: decrytpPasswordResult.message,
-            debugLine: _getDebugLine(),
-            returnedDebug: decrytpPasswordResult.debug
-          })
-        }
-        
-        if (decrytpPasswordResult.status === 'invalidPassword') {
-          return setCustomReply({
-            status: 'invalidCredentials',
-            message: 'Invalid email address or password',
-            debugLine: _getDebugLine()
-          })
-        }
+        })              
       }
 
 
       return setSuccessReply({
-        user: getByEmailAddressResult.user,
-        debugLine: _getDebugLine()
+        data: getByEmailAddressResult.user
       })
 
     } catch (error) {
-      return setErrorReply({
-        debugLine: _getDebugLine(),
-        errorObj: error
-      })
+      if (error.iType && ['invalidEmailAddress', 'invalidPassword'].includes(error.iType)) {
+        throw new CustomError('Invalid email address or password', 'invalidCredentials')
+      } else {
+        throw new CustomError(error.message, error.iType)
+      }
     }
   }
   // checkCredentials
@@ -148,30 +84,12 @@ class User {
 
       const checkCredentialsResult = await this.checkCredentials({ emailAddress, password, token })
 
-      if (checkCredentialsResult.status !== 'ok') {
-        return setCustomReply({
-          status: checkCredentialsResult.status,
-          message: checkCredentialsResult.message,
-          debugLine: _getDebugLine(),
-          returnedDebug: checkCredentialsResult.debug
-        })
-      }
-
       const generateTokenResult = new Token().generate({ 
         payload: {
           Expires_At: checkCredentialsResult.user.Expires_At,
           Email_Address: checkCredentialsResult.user.Email_Address
         }
       })
-
-      if (generateTokenResult.status !== 'ok') {
-        return setCustomReply({
-          status: generateTokenResult.status,
-          message: generateTokenResult.message,
-          debugLine: _getDebugLine(),
-          returnedDebug: generateTokenResult.debug
-        })
-      }
 
       // get user selected site
       const siteList = checkCredentialsResult.user.Sites.split(',')
@@ -196,11 +114,11 @@ class User {
 
       // get all user permissions
       const userDepartmentIDsCommaListResult = await new Permissions().getUserDepartments({
-        userID: checkCredentialsResult.user.ID
+        userID: checkCredentialsResult.data.ID
       })      
 
       const allUserPermissionsResult = await new Permissions().getAllUserPermissions({
-        userID: checkCredentialsResult.user.ID,
+        userID: checkCredentialsResult.data.ID,
         departmentIDsCommaList: userDepartmentIDsCommaListResult.departmentIDsCommaList,
         site: userSelectedSite
       })
@@ -221,18 +139,16 @@ class User {
       // prepare all user permissions
 
       return setSuccessReply({
-        menus,
-        selectedSite: userSelectedSite,
-        user: checkCredentialsResult.user,                        
-        token: generateTokenResult.token,  
-        debugLine: _getDebugLine()
+        data: {
+          menus,
+          selectedSite: userSelectedSite,
+          user: checkCredentialsResult.user,                        
+          token: generateTokenResult.token
+        }
       })
 
     } catch (error) {
-      return setErrorReply({
-        debugLine: _getDebugLine(),
-        errorObj: error
-      })
+      throw new CustomError(error.message, error.iType)
     }
   }
   // signIn
