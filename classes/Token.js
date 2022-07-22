@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken'
 import config from '../config'
 import DateUtils from './DateUtils'
 import { setSuccessReply } from './../appFunctions/replies'
-import CustomError from './CustomError';
+import CustomError from './CustomError3';
 
 class Token {
   
@@ -24,7 +24,7 @@ class Token {
       })
 
     } catch (error) {
-      throw new CustomError(error.message, error.iType)
+      throw new CustomError(error)
     }
   }
   // generate
@@ -40,12 +40,18 @@ class Token {
       const diffToDate = dateUtils.diffToDate(accountExpiresAt)
 
       if (diffToDate.days < 0) {
-        throw new CustomError('Your account is expired', 'accountIsExpired')
+        throw new CustomError({
+          message: 'Account is expired',
+          iType: 'accountIsExpired'
+        })
       }
 
       if (!ignoreShouldChangePassword) {
         if (verifyTokenResult.shouldChangePassword) {
-          throw new Error('Please change your password', 'shouldChangePassword')
+          throw new Error({
+            message: 'Please change your password',
+            iType: 'shouldChangePassword'
+          })
         }
       }
       
@@ -56,7 +62,10 @@ class Token {
         }
       })
     } catch (error) {
-      throw new CustomError('Token expired', 'tokenExpired')
+      throw new CustomError({
+        message: 'Token expired',
+        iType: 'tokenExpired'
+      })
     }
 
   }

@@ -1,5 +1,5 @@
 import { setSuccessReply } from '../appFunctions/replies'
-import CustomError from './CustomError';
+import CustomError from './CustomError3';
 
 class DateUtils {
   
@@ -14,7 +14,7 @@ class DateUtils {
         data: days
       })
     } catch (error) {
-      throw new CustomError(error.message, error.iType)
+      throw new CustomError(error)
     }
   }
   // diffToDate

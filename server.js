@@ -11,11 +11,18 @@ app.use(express.static('public'))
 app.use(express.json());
 app.use(cors())
 
+import DB from './classes/DB'
 import routerSignIn from './routes/signin'
 app.use('/signin', routerSignIn)
 
 async function main(){
- 
+  // try {
+  //   new DB().query({
+  //     sqlStatement: 'SELECT * FROM sys_users WHERE ID = -1'
+  //   })    
+  // } catch (error) {
+  //   console.log('error ', error)
+  // }
 }
 
 main().catch(error => console.log('main function error ', error))

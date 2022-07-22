@@ -1,5 +1,6 @@
 import mysql from 'mysql'
-import CustomError from './CustomError';
+import CustomError from './CustomError'
+import CustomError2 from './CustomError'
 import { setSuccessReply } from '../appFunctions/replies'
 import { result } from 'lodash';
 
@@ -38,11 +39,11 @@ class DB {
       DB.connection.query(sqlStatement, values, (error, results) => {
 
           if (error) {
-           throw new CustomError(error.message)
+           throw new CustomError(error)
           }
 
-          if (results[results.length -1].length === 0) {
-            throw new CustomError('Empty result','emptyResult')
+          if (results.length === 0 || results[results.length -1].length === 0) {
+            throw new CustomError({message: 'No records', iType: 'emptyDBResult'})
           }
 
           resolve(setSuccessReply({

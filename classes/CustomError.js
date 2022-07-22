@@ -1,11 +1,22 @@
 class CustomError extends Error {
-  constructor(message = '', itype = '', ...args) {
-    super(message, ...args)
+  constructor(params = {}) {
+
+    super(params.message)
+
     this.iStatus = 'error'
-    this.iType = itype || 'error'
-    if (message) 
-      this.message = message
-  }
+    this.iType = params.iType || 'error'
+
+    if (params.message) {
+      this.message = params.message
+    }
+    
+    for (const key in params) {
+      if (params.hasOwnProperty(key)) {
+          this[key] = params[key]
+      }
+    }
+
+  }  
 }
 
 export default CustomError

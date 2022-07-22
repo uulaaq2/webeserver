@@ -1,7 +1,7 @@
 import DB from './DB'
 import sqlstring from 'sqlstring'
 import { setSuccessReply } from './../appFunctions/replies'
-import CustomError from './CustomError'
+import CustomError from './CustomError3'
 
 class Permissions {
 
@@ -19,7 +19,7 @@ class Permissions {
         data: result.data[result.data.length -1][0].DepartmentIDsCommaList
       })
     } catch (error) {
-      throw new CustomError()
+      throw new CustomError(error)
     }
   }
   // getUserDepartments
@@ -43,7 +43,7 @@ class Permissions {
       })
 
     } catch (error) {
-      throw new CustomError(error.message, error.iType)
+      throw new CustomError(error)
     }
   }
 }

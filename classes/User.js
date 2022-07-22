@@ -5,7 +5,7 @@ import Permissions from './Permissions'
 import sqlstring from 'sqlstring'
 import _ from 'lodash'
 import { setSuccessReply } from '../appFunctions/replies'
-import CustomError from './CustomError'
+import CustomError from './CustomError3'
 
 class User {
 
@@ -14,7 +14,10 @@ class User {
     const { emailAddress } = params
 
     if (!emailAddress) {
-      throw new CustomError('Missing parameters - Email address', 'missingParameters')
+      throw new CustomError(({
+        iType: 'missingParameters',
+        message: 'Missing email addrres'
+      }))
     }
 
     try {
@@ -27,14 +30,17 @@ class User {
       })
 
       if (getByEmailAddressResult.data[getByEmailAddressResult.data.length - 1].length === 0) {
-        throw new CustomError('Invalid email address', 'invalidEmailAddress')
+        throw new CustomError({
+          iType: 'invalidEmailAddress',
+          message: 'Invalid email address'
+        })
       }
       return setSuccessReply({
         data: getByEmailAddressResult.data[getByEmailAddressResult.data.length - 1][0]
       })
 
     } catch (error) {
-      throw new CustomError(error.message, error.iType)
+      throw new CustomError(error)
     }
   }
   //getByEmailAddress
@@ -69,9 +75,12 @@ class User {
 
     } catch (error) {
       if (error.iType && ['invalidEmailAddress', 'invalidPassword'].includes(error.iType)) {
-        throw new CustomError('Invalid email address or password', 'invalidCredentials')
+        throw new CustomError({
+          iType: 'invalidSignInCredentials',
+          message: 'Invalid email address or password'
+        })
       } else {
-        throw new CustomError(error.message, error.iType)
+        throw new CustomError(error)
       }
     }
   }
@@ -148,7 +157,7 @@ class User {
       })
 
     } catch (error) {
-      throw new CustomError(error.message, error.iType)
+      throw new CustomError(error)
     }
   }
   // signIn

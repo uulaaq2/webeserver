@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs'
 import { setSuccessReply } from "../appFunctions/replies"
-import CustomError from './CustomError'
+import CustomError from './CustomError3'
 
 class Password {
 
@@ -16,7 +16,7 @@ class Password {
       })
 
     } catch (error) {
-      throw new CustomError()
+      throw new CustomError(error)
     }
   }
   // encrypt
@@ -35,7 +35,7 @@ class Password {
       }
 
     } catch (error) {
-      throw new CustomError(error.message, error.iType)
+      throw new CustomError(error)
     }
   }
   // compare
